@@ -24,6 +24,8 @@ ParamX is a tool designed to extract interesting subdomains and parameters from 
 - Processes URLs from files or standard input.
 - Custom parameter value replacement.
 - Easy configuration using YAML templates not JSON like gf
+- Supports all-tags mode to search across all vulnerability types
+- Supports all-params mode to find any parameterized URLs
 
 ## Templates
 - You can find our written templates here [paramx-tempalets](https://github.com/cyinnove/paramx-templates) or you can create your own, it's so easy to do
@@ -37,8 +39,6 @@ list:
   - param2
   - param2
 ```
-
-
 
 ## Installation
 
@@ -56,9 +56,11 @@ ParamX is executed via command-line interface (CLI) with several options to cust
 - `-tp` : Directory where YAML configuration files are located.
 - `-l` : Path to a file containing URLs (one per line).
 - `-tag` : The type of bug to extract the URLs based on it (default: "xss"). Supported values: xss, sqli, lfi, rce, idor, ssrf, ssti, redirect.
+- `-at` : Search for URLs matching all vulnerability tags.
+- `-ap` : Hunt for all kinds of parameterized URLs regardless of tag.
 - `-rw` : Replace the parameter value with a custom value.
 - `-t` : Path to a custom template.
-- `-ut` : Update the templates.
+- `-o` : Path to a file where the results should be saved.
 
 ### Examples
 
@@ -74,28 +76,28 @@ This will show output like :
 
 ![poc.png](/static/poc.png)
 
-#### Using Custom Template
+#### Search All Tags
 
-To use a custom template for extraction:
+To search for parameters matching any vulnerability type:
 
 ```sh
-cat urls.txt | paramx -t /path/to/custom_template.yaml  
+cat urls.txt | paramx -at
 ```
 
-#### Replacing Parameter Values
+#### Find All Parameterized URLs
 
-To replace the parameter value with a custom value:
+To find all URLs that contain parameters, regardless of type:
 
 ```sh
-paramx -rw "custom_value" -l urls.txt
+cat urls.txt | paramx -ap
 ```
 
-#### Updating Templates
+#### Save Results to File
 
-To update the YAML configuration templates:
+To save the results to a file:
 
 ```sh
-paramx -ut
+cat urls.txt | paramx -tag xss -o results.txt
 ```
 
 ## Contributing

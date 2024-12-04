@@ -16,6 +16,8 @@ func init() {
 	flag.StringVar(&opts.TempletesPath, "tp", "", "Directory where YAML configuration files are located.")
 	flag.StringVar(&opts.FileInput, "l", "", "Path to a file containing URLs (one per line).")
 	flag.StringVar(&opts.Tag, "tag", "xss", "The type of bug to extract the URLs based on it (default: \"xss\"). Supported values: xss, sqli, lfi, rce, idor, ssrf, ssti, redirect.")
+	flag.BoolVar(&opts.AllTags, "at", false, "Search for URLs matching all vulnerability tags (overrides -tag).")
+	flag.BoolVar(&opts.AllParams, "ap", false, "Hunt for all kinds of parameterized URLs regardless of tag (overrides -tag).")
 	flag.StringVar(&opts.ReplaceWith, "rw", "", "Replace the parameter value with a custom value.")
 	flag.StringVar(&opts.CustomTemplete, "t", "", "Path to a custom template.")
 	flag.StringVar(&opts.OutputFile, "o", "", "Path to a file where the results should be saved.")

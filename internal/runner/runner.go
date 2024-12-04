@@ -59,23 +59,60 @@ func Run(opts *Options) {
 		}
 
 	default:
-		logify.Infof("Starting getting parameters from %d urls for tag %s", len(opts.URLs), opts.Tag)
+		var result []string
+		tags := []string{"xss"}
 
-		result := utils.RemoveDuplicates(grep.GrepParameters(opts.URLs, configs, opts.Tag, opts.ReplaceWith))
+		if opts.AllTags {
+			// Define all supported tags
+			tags = []string{"xss", "sqli", "lfi", "rce", "idor", "ssrf", "ssti", "redirect"}
+			logify.Infof("Searching for parameters matching all vulnerability tags")
+		} else if opts.AllParams {
+			logify.Infof("Hunting for all parameterized URLs")
+			result = utils.RemoveDuplicates(grep.GrepAllParameters(opts.URLs))
+		} else {
+			// Validate single tag when not in all-tags mode
+			validTags := []string{"xss", "ssrf", "sqli", "lfi", "rce", "idor", "ssti", "redirect", "isubs"}
+			isValid := false
+			for _, validTag := range validTags {
+				if validTag == opts.Tag {
+					isValid = true
+					break
+				}
+			}
+			if !isValid {
+				logify.Fatalf("Invalid tag, please add a valid tag like (xss, ssrf, sqli, lfi, rce, idor, ssti, redirect, isubs)")
+			}
+			logify.Infof("Starting getting parameters from %d urls for tag %s", len(opts.URLs), opts.Tag)
+			tags = []string{opts.Tag}
+		}
+
+		if !opts.AllParams {
+			for _, tag := range tags {
+				// Skip validation in GrepParameters since we've already validated
+				tagResults := grep.GrepParametersNoValidate(opts.URLs, configs, tag, opts.ReplaceWith)
+				result = append(result, tagResults...)
+			}
+			result = utils.RemoveDuplicates(result)
+		}
 
 		for _, r := range result {
 			fmt.Fprintln(os.Stdout, r)
 		}
 
-		logify.Infof("Found %d parameter with tag %s", len(result), opts.Tag)
+		if opts.AllTags {
+			logify.Infof("Found %d parameters across all tags", len(result))
+		} else if opts.AllParams {
+			logify.Infof("Found %d parameterized URLs", len(result))
+		} else {
+			logify.Infof("Found %d parameter with tag %s", len(result), opts.Tag)
+		}
 
 		if opts.OutputFile != "" {
-			if err := utils.OutputTextResult(result, opts.OutputFile ); err != nil {
+			if err := utils.OutputTextResult(result, opts.OutputFile); err != nil {
 				logify.Fatalf("Error writing to file: %s\n", err.Error())
 			}
 			logify.Infof("URLs saved to %s", opts.OutputFile)
 		}
-
 	}
 
 }

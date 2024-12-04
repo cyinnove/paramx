@@ -22,11 +22,6 @@ func isTypeExist(tag string, types []string) bool {
 
 // GrepParameters searches for parameters in the given URLs based on the provided configurations and bug type.
 // It replaces the found parameters with the specified replacement string.
-// The function takes in the following parameters:
-// - urls: A slice of strings representing the URLs to search for parameters.
-// - configs: A slice of *config.Data representing the configurations to use for parameter extraction.
-// - tag: A string representing the bug type to search for.
-// - replaceWith: A string representing the replacement value for the found parameters.
 func GrepParameters(urls []string, configs []*config.Data, tag, replaceWith string) []string {
 	tags := []string{}
 
@@ -38,22 +33,29 @@ func GrepParameters(urls []string, configs []*config.Data, tag, replaceWith stri
 		logify.Fatalf("Invalid tag , please add a valid tag like (xss, ssrf, sqli, lfi, rce, idor, ssti, redirect, isubs)")
 	}
 
+	return GrepParametersNoValidate(urls, configs, tag, replaceWith)
+}
+
+// GrepParametersNoValidate is similar to GrepParameters but skips tag validation.
+// This is used internally when we've already validated the tag elsewhere.
+func GrepParametersNoValidate(urls []string, configs []*config.Data, tag, replaceWith string) []string {
 	result := []string{}
 
 	for _, rawURL := range urls {
 		params, fullURL := extractParameters(rawURL, replaceWith)
 
 		for _, cfg := range configs {
-
 			if !(cfg.Part == types.Query.String()) {
 				continue
 			}
 
-			for _, param := range cfg.List {
+			if !(strings.EqualFold(cfg.Tag, tag)) {
+				continue
+			}
 
-				if strings.EqualFold(cfg.Tag, tag) {
-
-					if _, exists := params[param]; exists {
+			for paramName := range params {
+				for _, param := range cfg.List {
+					if strings.EqualFold(paramName, param) {
 						result = append(result, fullURL)
 					}
 				}
@@ -100,6 +102,38 @@ func GrepSubdomains(urls []string, configs []*config.Data) []string {
 					}
 				}
 			}
+		}
+	}
+
+	return result
+}
+
+// GrepAllParameters finds all URLs that contain any parameters, regardless of tag.
+// It returns a slice of strings containing all URLs with parameters.
+func GrepAllParameters(urls []string) []string {
+	result := []string{}
+
+	for _, rawURL := range urls {
+		parsedURL, err := url.Parse(rawURL)
+		if err != nil {
+			continue
+		}
+
+		// Check if URL has query parameters
+		if parsedURL.RawQuery != "" {
+			result = append(result, rawURL)
+			continue
+		}
+
+		// Check if URL has path parameters
+		if strings.Contains(parsedURL.Path, ";") {
+			result = append(result, rawURL)
+			continue
+		}
+
+		// Check for matrix parameters or other parameter formats
+		if strings.Contains(rawURL, "=") {
+			result = append(result, rawURL)
 		}
 	}
 
